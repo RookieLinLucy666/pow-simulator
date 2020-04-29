@@ -47,6 +47,10 @@ func main() {
 				startNewRound(validator.CurrentBlockNumber(), validator.CurrentDifficulty())
 			}
 		default:
+			if time.Now().Unix()%11 == 0 {
+				validator.PrintLatestBlocks()
+			}
+
 			fmt.Println(time.Now().Unix())
 			time.Sleep(1 * time.Second)
 		}

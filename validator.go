@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/sha256"
 	"encoding/binary"
+	"fmt"
 	blockchain "github.com/michaelhly/pow-simulator/blockchain"
 	"sync"
 	"time"
@@ -45,7 +46,7 @@ func (v *Validator) CheckHash(hash [32]byte) bool {
 func (v *Validator) Validate(ticket Ticket) bool {
 	// Validate only one ticket at a time to avoid race conditions
 	v.mux.Lock()
-	blockNumber := v.block.GetBlockNumber()
+	blockNumber := v.CurrentBlockNumber()
 	if ticket.BlockNumber != blockNumber {
 		v.mux.Unlock()
 		return false
@@ -61,7 +62,7 @@ func (v *Validator) Validate(ticket Ticket) bool {
 		if (blockNumber+1)%1000 == 0 {
 			v.difficulty++
 		}
-		v.block.ConfirmBlock()
+		v.block.ConfirmBlock(int(ticket.MinerID), ticket.TicketTime, ticket.Attempts)
 		v.block = v.block.NextBlock(v.difficulty)
 	}
 
@@ -85,9 +86,21 @@ func (v *Validator) AddTicket(m Miner, blockNumber int, nonce uint32, attempts i
 }
 
 func (v *Validator) CurrentBlockNumber() int {
-	return v.block.GetBlockNumber()
+	return v.block.GetBlockHeight()
 }
 
 func (v *Validator) CurrentDifficulty() int {
 	return v.difficulty
+}
+
+func (v *Validator) PrintLatestBlocks() {
+	fmt.Println(
+		"-----------------------------------Latest Blocks-----------------------------------")
+	currBlock := v.block
+	for currBlock != nil {
+		fmt.Println(currBlock)
+		currBlock = currBlock.GetPrevBlock()
+	}
+	fmt.Println(
+		"-----------------------------------------------------------------------------------")
 }
