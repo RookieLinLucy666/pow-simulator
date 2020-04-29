@@ -6,9 +6,7 @@ import (
 	"math/rand"
 )
 
-type Miner struct {
-	id int
-}
+type Miner int
 
 func (m Miner) Start(v *Validator) {
 	attempts := 0
@@ -29,7 +27,7 @@ func (m Miner) Start(v *Validator) {
 		binary.BigEndian.PutUint32(bytebuffer, sum)
 		hash := sha256.Sum256(bytebuffer)
 		if v.CheckHash(hash) {
-			v.AddTicket(m.id, blockNum, sum, attempts)
+			v.AddTicket(m, blockNum, sum, attempts)
 		}
 	}
 }

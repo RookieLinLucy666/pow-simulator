@@ -30,7 +30,7 @@ func main() {
 	v := NewValidator(STARTING_DIFF)
 	// Initialize and start miners
 	for i := 0; i < NUM_MINERS; i++ {
-		miners[i] = Miner{i}
+		miners[i] = Miner(i)
 		go miners[i].Start(&v)
 	}
 

@@ -8,10 +8,11 @@ import (
 )
 
 type Ticket struct {
-	Attempts, BlockNumber, MinerId int
-	Nonce                          uint32
-	Hash                           [32]byte
-	TicketTime                     int64
+	Attempts, BlockNumber int
+	MinerId               Miner
+	Nonce                 uint32
+	Hash                  [32]byte
+	TicketTime            int64
 }
 
 type Validator struct {
@@ -39,7 +40,7 @@ func (v Validator) CheckHash(hash [32]byte) bool {
 	return true
 }
 
-func (v Validator) AddTicket(minerId int, blockNumber int, nonce uint32, attempts int) {
+func (v Validator) AddTicket(m Miner, blockNumber int, nonce uint32, attempts int) {
 	buffer := make([]byte, 32)
 	binary.BigEndian.PutUint32(buffer, nonce)
 	hash := sha256.Sum256(buffer)
@@ -48,7 +49,7 @@ func (v Validator) AddTicket(minerId int, blockNumber int, nonce uint32, attempt
 		Attempts:    attempts,
 		BlockNumber: blockNumber,
 		Hash:        hash,
-		MinerId:     minerId,
+		MinerId:     m,
 		Nonce:       nonce,
 		TicketTime:  time.Now().UnixNano()}
 	v.WaitChan <- newTicket
