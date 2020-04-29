@@ -46,7 +46,7 @@ func (b Block) GetBlockHeight() int {
 	return b.height
 }
 
-func (b *Block) GetPrevBlock() *Block {
+func (b Block) GetPrevBlock() *Block {
 	return b.prev
 }
 

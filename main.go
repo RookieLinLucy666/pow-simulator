@@ -12,9 +12,7 @@ const GenesisDifficulty = 3
 // NumMiners - number of miners mining for new blocks
 const NumMiners = 5
 
-var miners [NumMiners]Miner
-
-func startNewRound(blockNumber int, diff int) {
+func printNewRound(blockNumber int, diff int) {
 	fmt.Printf(
 		"Starting round %d (Difficulty: %d)\n", blockNumber, diff)
 }
@@ -32,19 +30,19 @@ func main() {
 	// Initalize validator
 	validator := NewValidator(GenesisDifficulty)
 	// Initialize and start miners
+	miners := make([]Miner, NumMiners)
 	for i := 0; i < NumMiners; i++ {
 		miners[i] = Miner(i)
 		go miners[i].Start(validator)
 	}
 
-	// Start the first round
-	startNewRound(validator.CurrentBlockNumber(), validator.CurrentDifficulty())
+	printNewRound(validator.CurrentBlockNumber(), validator.CurrentDifficulty())
 	for {
 		select {
 		case ticket := <-validator.WaitChan:
 			if validator.Validate(ticket) {
 				printWinner(ticket)
-				startNewRound(validator.CurrentBlockNumber(), validator.CurrentDifficulty())
+				printNewRound(validator.CurrentBlockNumber(), validator.CurrentDifficulty())
 			}
 		default:
 			if time.Now().Unix()%11 == 0 {
@@ -52,7 +50,7 @@ func main() {
 			}
 
 			fmt.Println(time.Now().Unix())
-			time.Sleep(1 * time.Second)
+			time.Sleep(time.Second)
 		}
 	}
 }
