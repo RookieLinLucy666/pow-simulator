@@ -16,20 +16,12 @@ func startNewRound(v *Validator) {
 		"Starting round %d (Difficulty: %d)\n", v.BlockNumber, v.Difficulty)
 }
 
-func PrintHash(hash [32]byte) {
-	for i := 0; i < 32; i++ {
-		fmt.Printf("%02x", hash[i])
-	}
-}
-
 func printWinner(ticket Ticket) {
 	fmt.Println("New Block Found!")
 	fmt.Printf(
 		"Block %d was found by miner %d with nonce %v after %d attempts\n",
 		ticket.BlockNumber, ticket.MinerId, ticket.Nonce, ticket.Attempts)
-	fmt.Print("(Hash: ")
-	PrintHash(ticket.Hash)
-	fmt.Println(")")
+	fmt.Print(fmt.Sprintf("Hash: 0x%x\n", ticket.Hash))
 }
 
 func main() {
@@ -53,7 +45,7 @@ func main() {
 			}
 		default:
 			fmt.Println(time.Now().Unix())
-			time.Sleep(5000 * time.Millisecond)
+			time.Sleep(1 * time.Second)
 		}
 	}
 }
