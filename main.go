@@ -6,42 +6,45 @@ import (
 	"time"
 )
 
-const STARTING_DIFF = 3
-const NUM_MINERS = 5
+// GenesisDifficulty - the difficulty of the genesis block
+const GenesisDifficulty = 3
 
-var miners [NUM_MINERS]Miner
+// NumMiners - number of miners mining for new blocks
+const NumMiners = 5
 
-func startNewRound(v *Validator) {
+var miners [NumMiners]Miner
+
+func startNewRound(blockNumber int, diff int) {
 	fmt.Printf(
-		"Starting round %d (Difficulty: %d)\n", v.BlockNumber, v.Difficulty)
+		"Starting round %d (Difficulty: %d)\n", blockNumber, diff)
 }
 
 func printWinner(ticket Ticket) {
 	fmt.Println("New Block Found!")
 	fmt.Printf(
 		"Block %d was found by miner %d with nonce %v after %d attempts\n",
-		ticket.BlockNumber, ticket.MinerId, ticket.Nonce, ticket.Attempts)
+		ticket.BlockNumber, ticket.MinerID, ticket.Nonce, ticket.Attempts)
 	fmt.Print(fmt.Sprintf("Hash: 0x%x\n", ticket.Hash))
 }
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
 	// Initalize validator
-	v := NewValidator(STARTING_DIFF)
+	validator := NewValidator(GenesisDifficulty)
 	// Initialize and start miners
-	for i := 0; i < NUM_MINERS; i++ {
+	for i := 0; i < NumMiners; i++ {
 		miners[i] = Miner(i)
-		go miners[i].Start(&v)
+		go miners[i].Start(validator)
 	}
 
 	// Start the first round
-	startNewRound(&v)
+	startNewRound(validator.CurrentBlockNumber(), validator.CurrentDifficulty())
 	for {
 		select {
-		case ticket := <-v.WaitChan:
-			if v.Validate(ticket) {
+		case ticket := <-validator.WaitChan:
+			if validator.Validate(ticket) {
 				printWinner(ticket)
-				startNewRound(&v)
+				startNewRound(validator.CurrentBlockNumber(), validator.CurrentDifficulty())
 			}
 		default:
 			fmt.Println(time.Now().Unix())

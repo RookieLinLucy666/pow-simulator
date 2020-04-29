@@ -11,12 +11,12 @@ type Miner int
 func (m Miner) Start(v *Validator) {
 	attempts := 0
 	nonce := rand.Uint32()
-	blockNum := v.BlockNumber
+	blockNum := v.CurrentBlockNumber()
 	bytebuffer := make([]byte, 32)
 
 	for {
-		if blockNum < v.BlockNumber {
-			blockNum = v.BlockNumber
+		if blockNum < v.CurrentBlockNumber() {
+			blockNum = v.CurrentBlockNumber()
 			attempts = 0
 			nonce = rand.Uint32()
 		}

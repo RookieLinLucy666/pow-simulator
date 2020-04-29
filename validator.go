@@ -3,36 +3,38 @@ package main
 import (
 	"crypto/sha256"
 	"encoding/binary"
+	blockchain "github.com/michaelhly/pow-simulator/blockchain"
 	"sync"
 	"time"
 )
 
 type Ticket struct {
 	Attempts, BlockNumber int
-	MinerId               Miner
+	MinerID               Miner
 	Nonce                 uint32
 	Hash                  [32]byte
 	TicketTime            int64
 }
 
 type Validator struct {
-	BlockNumber, Difficulty int
-	WaitChan                chan Ticket
-	lastBlockTime           int64
-	mux                     sync.Mutex
+	block         *blockchain.Block
+	difficulty    int
+	mux           sync.Mutex
+	lastBlockTime int64
+	WaitChan      chan Ticket
 }
 
-func NewValidator(difficulty int) Validator {
+func NewValidator(startDiff int) *Validator {
 	v := Validator{}
-	v.BlockNumber = 0
-	v.Difficulty = difficulty
-	v.WaitChan = make(chan Ticket)
+	v.block = blockchain.CreateBlock(startDiff)
+	v.difficulty = startDiff
 	v.lastBlockTime = 0
-	return v
+	v.WaitChan = make(chan Ticket)
+	return &v
 }
 
-func (v Validator) CheckHash(hash [32]byte) bool {
-	for i := 0; i < v.Difficulty; i++ {
+func (v *Validator) CheckHash(hash [32]byte) bool {
+	for i := 0; i < v.difficulty; i++ {
 		if hash[i] != 0 {
 			return false
 		}
@@ -40,25 +42,11 @@ func (v Validator) CheckHash(hash [32]byte) bool {
 	return true
 }
 
-func (v Validator) AddTicket(m Miner, blockNumber int, nonce uint32, attempts int) {
-	buffer := make([]byte, 32)
-	binary.BigEndian.PutUint32(buffer, nonce)
-	hash := sha256.Sum256(buffer)
-
-	newTicket := Ticket{
-		Attempts:    attempts,
-		BlockNumber: blockNumber,
-		Hash:        hash,
-		MinerId:     m,
-		Nonce:       nonce,
-		TicketTime:  time.Now().UnixNano()}
-	v.WaitChan <- newTicket
-}
-
 func (v *Validator) Validate(ticket Ticket) bool {
 	// Validate only one ticket at a time to avoid race conditions
 	v.mux.Lock()
-	if ticket.BlockNumber != v.BlockNumber {
+	blockNumber := v.block.GetBlockNumber()
+	if ticket.BlockNumber != blockNumber {
 		v.mux.Unlock()
 		return false
 	}
@@ -68,13 +56,38 @@ func (v *Validator) Validate(ticket Ticket) bool {
 		if v.lastBlockTime > ticket.TicketTime {
 			panic("Last block time came after this ticket. Should not create new block.")
 		}
+
 		v.lastBlockTime = ticket.TicketTime
-		v.BlockNumber++
-		if v.BlockNumber%1000 == 0 {
-			v.Difficulty++
+		if (blockNumber+1)%1000 == 0 {
+			v.difficulty++
 		}
+		v.block.ConfirmBlock()
+		v.block = v.block.NextBlock(v.difficulty)
 	}
 
 	v.mux.Unlock()
 	return success
+}
+
+func (v *Validator) AddTicket(m Miner, blockNumber int, nonce uint32, attempts int) {
+	buffer := make([]byte, 32)
+	binary.BigEndian.PutUint32(buffer, nonce)
+	hash := sha256.Sum256(buffer)
+
+	newTicket := Ticket{
+		Attempts:    attempts,
+		BlockNumber: blockNumber,
+		Hash:        hash,
+		MinerID:     m,
+		Nonce:       nonce,
+		TicketTime:  time.Now().UnixNano()}
+	v.WaitChan <- newTicket
+}
+
+func (v *Validator) CurrentBlockNumber() int {
+	return v.block.GetBlockNumber()
+}
+
+func (v *Validator) CurrentDifficulty() int {
+	return v.difficulty
 }
