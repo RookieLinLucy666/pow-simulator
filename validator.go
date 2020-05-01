@@ -4,9 +4,9 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
-	blockchain "github.com/michaelhly/pow-simulator/blockchain"
-	"sync"
 	"time"
+
+	blockchain "github.com/michaelhly/pow-simulator/blockchain"
 )
 
 type Ticket struct {
@@ -20,7 +20,6 @@ type Ticket struct {
 type Validator struct {
 	block         *blockchain.Block
 	difficulty    int
-	mux           sync.Mutex
 	lastBlockTime int64
 	WaitChan      chan Ticket
 }
@@ -44,11 +43,8 @@ func (v *Validator) CheckHash(hash [32]byte) bool {
 }
 
 func (v *Validator) Validate(ticket Ticket) bool {
-	// Validate only one ticket at a time to avoid race conditions
-	v.mux.Lock()
 	blockNumber := v.CurrentBlockNumber()
 	if ticket.BlockNumber != blockNumber {
-		v.mux.Unlock()
 		return false
 	}
 
@@ -66,7 +62,6 @@ func (v *Validator) Validate(ticket Ticket) bool {
 		v.block = v.block.NextBlock(v.difficulty)
 	}
 
-	v.mux.Unlock()
 	return success
 }
 
